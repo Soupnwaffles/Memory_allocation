@@ -1,0 +1,69 @@
+Simulates Heap
+Will not make any memory calls
+Operate on a simulated heap. 
+
+Accept input and produce output according to specs. 
+
+Will read series of allocation, reallocation, and free calls from an input text file
+	- detailed in specs
+
+Process them using both implicit and explicit free list approaches
+
+Must use both headers and footers for blocks in both approaches. 
+
+Allow the user to choose whether to use a first-fit or best fit approaches. 
+
+FOR ALL CASES, use immediate coalescing of free blocks. 
+
+---------------------------------------------------------------
+SPECIFICATIONS
+_____________
+
+YOUR HEAP:
+--------
+- Start heap at address 0 
+- assume a 32-bit system (each word 4 bytes) 
+- Assume double-word alignment of all allocated blocks
+- Calls to myalloc and myrealloc take an input parameter indicating the size of the allocation in bytes. 
+- Invalid calls to any primary func will give an error but not crash your simulator (though they may have no effect on the heap) 
+- Your initial heap size will be 1000 words, may expand heap to 100,000 words MAX
+
+Payload starts at an address divisible by 8 and take up two words.
+
+Heap starts at word 0, call myalloc(5) then : 
+- header at word 1(address 4) 
+- payload at word 2 (address 8) 
+- footer at word 4 (address 16) 
+- 5 bytes for payload and 3 bytes padding. 
+
+- Next header would start at word 5 (address 20) 
+- Next payload starts at word 6 (address 24) 
+
+--------------------------------------------
+Functions: 
+
+myalloc(size) : 
+	- TAKES  an int value indicating the number of bytes to allocate for the payload of the block
+	- RETURNS a "pointer" to the starting address of the payload of the allocated block
+
+		--The "pointer" can take any form depending on the data structure I use to represent heap 
+	
+myrealloc(pointer, size) : 
+	- TAKES a pointer to an allocated block and an int value to resize the block to
+	- returns a "pointer" to the new block
+	- Copies the payload from the old block to the new block
+	- Frees the old block
+	- A call to myrealloc with a size of zero is equivalent to a call to myfree
+
+myfree(pointer): 
+	- MUST USE LIFO policy for EXPLICIT free lists
+	- PREV POINTER SHOULD BE FIRST AND NEXT POINTER SHOULD BE SECOND (opposite from the slides) 
+	- Frees the block pointed to by the input parameter "pointer" 
+	- Returns nothing
+	- ONly works if "pointer" represents a previously allocated or reallocated block that has not yet been freed.
+
+mysbrk(size): 
+	- Grows or shrinks the size of the heap by a number of words specified by the input parameter "size" 
+	- You may call this whenever you need to in the course of a simulation, will need to grow the heap ([ONLY AS MUCH AS NEEDED FOR ALLOC])
+		do not extend a free block at end of previous space, use a totally new block
+	- This call will RETURN an error and halt the simulation if your heap would need to grow past the max size of 100,000 words. 
