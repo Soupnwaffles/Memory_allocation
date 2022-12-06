@@ -5,10 +5,16 @@
 def heapstart(argv): 
     # Takes argv given by user.
     arg=argv.split()
-
+    #Need to loop here until they give valid input. 
     if (len(arg)<5): 
         printusage()
         return 
+
+    #Strategy, fit, heap and pointer array must be global variables. 
+    global strategy 
+    global fit 
+    global heap 
+    global pointerarray
 
     outputfile=arg[1]
 
