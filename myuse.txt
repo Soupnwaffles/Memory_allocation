@@ -67,3 +67,99 @@ mysbrk(size):
 	- You may call this whenever you need to in the course of a simulation, will need to grow the heap ([ONLY AS MUCH AS NEEDED FOR ALLOC])
 		do not extend a free block at end of previous space, use a totally new block
 	- This call will RETURN an error and halt the simulation if your heap would need to grow past the max size of 100,000 words. 
+
+--------------------------------------------------------
+USER OPTIONS: 
+User must be able to specify the following for each run of sim: 
+- Input text file
+- Implicit or explicit free list 
+- First-fit or Best-fit allocation
+
+.......................................................
+INPUT: 
+You will proces text file for alloc,  realloc and free calls
+that sim should make on your simulated heap. 
+The input file will be in the form of simple comma-sep values format
+EX: 
+a, 5, 0
+f, 0
+a, 10, 1
+r, 20, 1, 2
+f, 2
+
+a: 
+- calls to myalloc
+- An integer to indicate "size" parameter
+- An integer b/w 0 and 999 to act as a reference to block allocated by call
+	- This val will be used to tie future calls to "myfree" and "myalloc" 
+	- You may use this val any way you wish. Can be used to: 
+		- name pointers returned by simulator,
+		- as key to key-value pairs that keep track of simulated pointer's etc
+	- Simpply there to ensure that we are calling "myrealloc" and "myfree" on correct blocks
+
+r: 
+- Calls to myrealloc
+- An integer to indicate the "size" parameter
+- An int b/w 0 and 999 to reference which 
+	block created by a previous call to myrealloc we are resizing. 
+- An int b/w 0 and 999 to reference new block allocated by the call. 
+
+f: 
+- Calls to myfree
+- An int b/w 0 and 999 to specify the allocation that this call is freeing.
+
+EX: 
+a, 5, 0    =    ptr0 = myalloc(5)
+f, 0       =    myfree(ptr0)
+a, 10, 1   =	ptr1 = myalloc(10)
+r, 20, 1, 2=    ptr2 = myrealloc(ptr1,20)
+
+No need to validate input for project, assume all input files formatted
+ correctly
+ --------------------------------------------------------------------------
+ OUTPUT: 
+ will be another comma-seperated value text file called output.text
+
+ Simply indicate the value of each word in your simulated heap in hexadecimal
+
+ START with word 0 and work way up to whatever
+  the last word in your heap ends up being after sim 
+
+bit 0 of header and footer to indicate the use of current block:
+- 1 for allocated
+- 0 for free
+
+We do not use bits 1 and 2. 
+Instead, we use header of the next block and footer of prev block to check
+for possible coalescing. 
+
+--FOR MYREALLOC(), we implement it as myalloc() followed by myfree()--
+
+---------------------------------------------------------------------------
+So, a word is 4 bytes. 
+
+For a block of size 24 bytes (0x18) the header would be 0x18 | 0x1 = 0x19
+
+for malloc(5) 
+0, 0x00000001
+1, 0x00000011
+2, 
+3, 
+4, 0x00000011
+
+Block for this alloc uses 4 words (1=header, 2 and 3= payload, 4= footer)
+Last bit is set, indicating the block this is describing is allocated 
+
+To get the size, mask it with 0b1111...10 (all 1's except least significant is 0)
+Essentially flipping last bit to a 0, so size is 0b100000 which is decimal 16 bytes. (4 words) 
+
+"Assume double-word alignment of all allocated blocks" - prob means payload must be in 2 word increments (2,4,6,8,etc)
+When we alloc, use smallest even num of words that will fit the number of bytes allocated. 
+
+Wanted alloc 5 bytes-> payload=2 words
+wanted alloc 17 bytes -> payload = 6 words
+
+All PAYLOADS ahve to start at an address divisible by 8
+Header/footer are 1 word..
+
+So if calls for 5 bytes, use 2 words. If calls for 17 bytes, use 6 words. 
