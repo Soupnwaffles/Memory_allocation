@@ -1,13 +1,27 @@
 #Need global for explicit/implicit
 #Need global heap 
 #Need global fit
+import sys
 
-def heapstart(argv): 
+heap = []
+strategy = ""
+fit = "" 
+pointerarray = []
+def heapstart(argv=None): 
     # Takes argv given by user.
-    arg=argv.split()
-    #Need to loop here until they give valid input. 
+    #print(argv)
+    arg = argv
+    # Argv here can have something even if nothing is put in the command, only running
+    # It will default to the path of the project as argv, with a length of 1 
+    if arg is None or len(arg)==1: 
+    #If input is none, default values used.  
+        print("Commandline was none, defaulted to using 5.in as an input file, with implicit free list using first fit. ")
+        arg = ["memoryalloc.py", "result", "--free-list=implicit", "--fit=first", "examples/5.in"]
     if (len(arg)<5): 
         printusage()
+        print(arg) 
+        print(len(arg))
+        print("Try running again with the format above. ")
         return 
 
     #Strategy, fit, heap and pointer array must be global variables. 
@@ -62,6 +76,7 @@ def heapstart(argv):
 
     #Create the heap
     heap = [0]*1000
+    #print(heap[2])
 
     #Pointers to heap
     pointerarray = [0]*1000
@@ -72,7 +87,7 @@ def heapstart(argv):
 
 
 def printusage(): 
-    print("Usage: python3 heap.py [-o <output-path>] --free-list=\{implicit or explicit\} --fit=\{first or best\} <input file>   ")
+    print("Usage: python3 heap.py [-o <output-path>] --free-list={implicit or explicit} --fit={first or best} <input file>   ")
     return 
 
 def myalloc(heap, strategy, fit, bytes): 
@@ -100,3 +115,9 @@ def myrealloc(heap, strategy, fit, address, bytes):
 
 def mysbrk(heap): 
     heap.append([0]*99000)
+
+if __name__== "__main__": 
+    heapstart(sys.argv)
+    print(heap[2])
+    print(fit) 
+    print(strategy)
