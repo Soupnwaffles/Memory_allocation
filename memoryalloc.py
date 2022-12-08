@@ -13,10 +13,10 @@ def heapstart(argv=None):
     arg = argv
     # Argv here can have something even if nothing is put in the command, only running
     # It will default to the path of the project as argv, with a length of 1 
-    if arg is None or len(arg)==1: 
+    if arg is None or len(arg)==1 or len(arg)==2: 
     #If input is none, default values used.  
         print("Commandline was none, defaulted to using 5.in as an input file, with implicit free list using first fit. ")
-        arg = ["memoryalloc.py", "result/imfirst.txt", "--free-list=implicit", "--fit=first", "examples/5.in"]
+        arg = ["memoryalloc.py", "result", "--free-list=implicit", "--fit=first", "examples/5.in"]
     if (len(arg)<5): 
         printusage()
         print(arg) 
@@ -29,6 +29,9 @@ def heapstart(argv=None):
     global fit 
     global heap 
     global pointerarray
+    global f 
+    global o
+    global totalbytesheap
 
     outputfile=arg[1]
 
@@ -75,7 +78,14 @@ def heapstart(argv=None):
         return 
 
     #Create the heap
-    heap = [0]*1000
+    heap = ["0x00000000"]*1028
+    heap[0] = "0x00000001"
+    # If implicit, only worry about header and footer when initializing the heap. 
+    if strategy == "implicit": 
+        totalbytesinheap=((len(heap)-4)/2)
+        heap[1] ="0x{0:0{1}X}".format(int(totalbytesinheap),8)
+        heap[len(heap)-1] = "0x{0:0{1}X}".format(int(totalbytesinheap),8)
+        print("last item in heap: ", heap[len(heap)-1])
     #print(heap[2])
 
     #Pointers to heap
@@ -128,8 +138,31 @@ def myalloc(bytes):
                 elif decimalsize >= totalbytes: 
                     found = True
                     #Add the bytes allocated + 1 (to indicate allocation) and return pointer. 
+                    #Get the previous free block size and save it for later use. 
+                    prevsize=heap[i]
+                    # Make the previously free header into whatever the allocated size is, plus 1 for allocation. 
                     heap[i]="0x{0:0{1}X}".format(totalbytes+1,8)
-                    heap[i+(totalbytes/4)-1] = "0x{0:0{1}X}".format(totalbytes+1,8)
+                    #Make the new footer for the allocated block. 
+                    heap[int(i+(totalbytes/4)-1)] = "0x{0:0{1}X}".format(totalbytes+1,8)  #Problem here? 
+                    # If the new alloc takes up the entire previous free block, do nothing
+                    if int(prevsize, 16) == (totalbytes/4): 
+                        continue 
+                    # If the previous free block was greater than the allocated space
+                    else:
+                        try: 
+                            #Set a new size for the free block
+                            newsizefree = int(prevsize,16)-totalbytes
+                            # Go to where the new free block will be, change it to its new size. 
+                            heap[int(i+(totalbytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
+                            # Also change the footer of the previous free block to the new size. 
+                            try: 
+                                heap[int(i + (int(prevsize,16)/4)-1)] = "0x{0:0{1}X}".format(newsizefree, 8)
+                            except Exception as e: 
+                                print("Something went wrong specifically when changing the footer of the prev free block.")
+                                print(e) 
+                        except Exception as e: 
+                            print("Something went wrong when fixing new free block")
+                            print(e) 
                     return i
 
 
@@ -138,7 +171,7 @@ def myalloc(bytes):
     
     return 
 
-def myfree(heap, address): 
+def myfree(address): 
     # must lookup reference block in pointerarray
     # If already free, don't do anything
     # Check if the block's neighbors are free and coalesce them 
@@ -146,9 +179,25 @@ def myfree(heap, address):
     # Update the reference/pointer in the pointerarray
     return 
     
-  
+def runlines(input,output): 
+    # Run for each line in input text file
+    for line in input: 
+        print(line)
+        theline=line.split(",")
+        # If allocation, form: bytes, variable name
+        if theline[0].strip()=="a": 
+            #set pointerarray at index (variable name) to point to the resulting index of the alloc
+            pointerarray[int(theline[2])] = myalloc(int(theline[1]))
+        # If free, find the pointer, and execute the myfree function on it
+        elif theline[0].strip()=="f": 
+            myfree(int(theline[1]))
+        # If realloc, set new variable in the mypointer array and do the myrealloc using the previous variable and the new alloc space. 
+        elif theline[0].strip()=="r": 
+            pointerarray[int(theline[3])]= myrealloc(pointerarray[int(theline[2])], int(theline[1]))
 
-def myrealloc(heap, strategy, fit, address, bytes): 
+    return 
+
+def myrealloc(prevpointer, bytes): 
     return 
 
 def mysbrk(): 
@@ -156,6 +205,17 @@ def mysbrk():
 
 if __name__== "__main__": 
     heapstart(sys.argv)
-    print(heap[2])
-    print(fit) 
-    print(strategy)
+    try: 
+        print(heap[2])
+        print(fit) 
+        print(strategy)
+        try: 
+            runlines(f,o)
+            for i in range(0,len(heap)): 
+                if heap[i] != "0x00000000": 
+                    print(i, heap[i])
+        except Exception as e: 
+            print("could not run the lines of the input file, or something with output went wrong")
+            print(e)
+    except: 
+        print("heap was not started correctly")

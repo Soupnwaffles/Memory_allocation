@@ -18,6 +18,7 @@ def main():
     totalbytes=127
     #address is 0x format w/ lowercase x and Uppercase hexadecimal a-f
     address= '0x{0:0{1}X}'.format(totalbytes,8)
+    print(int(address,16))
     print(myhex)
     print(myother)
     print(address)
