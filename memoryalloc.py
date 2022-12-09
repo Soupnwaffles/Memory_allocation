@@ -31,9 +31,9 @@ def heapstart(argv=None):
     global pointerarray
     global f 
     global o
-    global totalbytesheap
     global totalwords
-
+    #global totalbytesinheap
+    totalwords = len(heap)
     outputfile=arg[1]
 
     strategystring= arg[2]
@@ -79,19 +79,21 @@ def heapstart(argv=None):
         return 
 
     #Create the heap
-    heap = ["0x00000000"]*1025
+    heap = [""]*1000
     heap[0] = "0x00000001"
+    heap[len(heap)-1]="0x00000001"
     # If implicit, only worry about header and footer when initializing the heap. 
     if strategy == "implicit": 
-        totalwords = len(heap) -1
-        totalbytesinheap=(totalwords/2)
-        heap[1] ="0x{0:0{1}X}".format(int(totalbytesinheap),8)
-        heap[len(heap)-1] = "0x{0:0{1}X}".format(int(totalbytesinheap),8)
+        totalwords = len(heap)
+        initial_free_words= totalwords-2
+        #initial_free_bytes=(totalwords/2)-1
+        initial_free_bytes = initial_free_words * 4
+        heap[1] ="0x{0:0{1}X}".format(int(initial_free_bytes),8)
+        heap[len(heap)-2] = "0x{0:0{1}X}".format(int(initial_free_bytes),8)
         print("last item in heap: ", heap[len(heap)-1])
-    #print(heap[2])
-
+    # Above should be good unless change in variables is wanted. 
     #Pointers to heap
-    pointerarray = [0]*1000
+    pointerarray = [None]*100
 
 
     # end of heapstart
@@ -109,9 +111,9 @@ def myalloc(bytes):
     # IF allocatin 13 bytes, take 13 + (8-(13%8)) = 16 , then +8 for head/foot
     paddedbytes= 8-(bytes%8)
     payloadbytes= bytes + paddedbytes
-    totalbytes=  8 + payloadbytes
-    allocwords = int(totalbytes)/4
-    address= "0x{0:0{1}X}".format(totalbytes,8)
+    total_allocated_bytes=  8 + payloadbytes
+    total_allocated_words = int(total_allocated_bytes)/4
+    address= "0x{0:0{1}X}".format(total_allocated_bytes,8)
     #First address/word is a placeholder. 
     #Firstfit
     #Find the first available free space when allocating. 
@@ -121,52 +123,64 @@ def myalloc(bytes):
     i = 1 
     if fit == "first" and strategy =="implicit":
         while (found == False):  
-            decimalsize = int(heap[i], 16)
-            newwords = decimalsize/4 
+            # Decimal value of the bytes of the previous free block. 
+            decimal_old_blockbytes = int(heap[i], 16)
+            decimal_old_numwords = decimal_old_blockbytes/4 
             # If space is allocated
-            if decimalsize % 2 == 1: 
+            if decimal_old_blockbytes % 2 == 1: 
                 # Move pointer forward 
-                i += (newwords)
+                # Subtract 1 if allocated, move ahead by that much 
+                decimal_old_blockbytes-=1
+                decimal_old_numwords = (decimal_old_blockbytes-1)/4
+                i += decimal_old_numwords
                 # If there is not enough space when moving to next block
-                if i >=(len(heap)-(totalbytes/4)): 
+                if i >=(len(heap)-(total_allocated_bytes/4)): 
                     mysbrk()
-            elif decimalsize % 2 == 0: 
+            elif decimal_old_blockbytes % 2 == 0: 
                 # If it is free, but not enough space for allocation
-                if  decimalsize < totalbytes : 
+                if  decimal_old_blockbytes < total_allocated_bytes : 
                     #Move forward certain amount of words to next block
-                    i += (decimalsize/4)
+                    i += (decimal_old_blockbytes/4)
                     #Increase heap if heapsize reached limit. 
-                    if i>=(len(heap)-(totalbytes/4)): 
+                    if i>=(len(heap)-(total_allocated_bytes/4)): 
                         mysbrk()
                 #Otherwise, if there is enough space. 
-                elif decimalsize >= totalbytes: 
+                elif decimal_old_blockbytes >= total_allocated_bytes: 
                     found = True
                     #Add the bytes allocated + 1 (to indicate allocation) and return pointer. 
                     #Get the previous free block size and save it for later use. 
                     prevsize=heap[i]
                     # Make the previously free header into whatever the allocated size is, plus 1 for allocation. 
-                    heap[i]="0x{0:0{1}X}".format(totalbytes+1,8)
+                    heap[i]="0x{0:0{1}X}".format(total_allocated_bytes+1,8)
                     #Make the new footer for the allocated block. 
-                    heap[int(i+(totalbytes/4)-1)] = "0x{0:0{1}X}".format(totalbytes+1,8)  #Problem here? 
+                    heap[int(i+(total_allocated_bytes/4)-1)] = "0x{0:0{1}X}".format(total_allocated_bytes+1,8)  #Problem here? 
                     # If the new alloc takes up the entire previous free block, do nothing
-                    if int(prevsize, 16) == (totalbytes/4): 
+                    if int(prevsize, 16) == (total_allocated_bytes/4): 
                         continue 
                     # If the previous free block was greater than the allocated space
                     else:
                         try: 
                             #Set a new size for the free block
-                            newsizefree = int(prevsize,16)-totalbytes
+                            #newsizefree = int(prevsize,16)-total_allocated_bytes
+                            newsizefree = decimal_old_blockbytes - total_allocated_bytes
+                            print("decimal_old_blockbytes is ", decimal_old_blockbytes)
+                            print("total alloced bytes are: ",total_allocated_bytes)
+                            print("newsizefree is", newsizefree)
                             # Go to where the new free block will be, change it to its new size. 
-                            heap[int(i+(totalbytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
+                            #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
+                            heap[int(i+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
                             # Also change the footer of the previous free block to the new size. 
                             try: 
-                                heap[int(i + (int(prevsize,16)*2)-1)] = "0x{0:0{1}X}".format(newsizefree, 8)
+                                #heap[int(i + (int(prevsize,16)*2)-1)] = "0x{0:0{1}X}".format(newsizefree, 8)
+                                heap[int(i + (decimal_old_numwords)-1)] = "0x{0:0{1}X}".format(newsizefree, 8) 
                             except Exception as e: 
                                 print("Something went wrong specifically when changing the footer of the prev free block.")
                                 print(e) 
                         except Exception as e: 
                             print("Something went wrong when fixing new free block")
                             print(e) 
+                    if i == 125.75: 
+                        print("Why here?")
                     return i
 
 
@@ -218,11 +232,16 @@ if __name__== "__main__":
         try: 
             runlines(f,o)
             for i in range(0,len(heap)): 
-                if heap[i] != "0x00000000": 
+                #if heap[i] != "0x00000000" or heap[i] != "": 
+                if heap[i] != "" and heap[i]!= None: 
                     print(i, heap[i])
-            for every in pointerarray: 
-                if every != 0: 
-                    print(every) 
+            for j in range(0,len(pointerarray)): 
+                try: 
+                    if pointerarray[j] != None: 
+                        print("pointerarray",j, "is ", pointerarray[j]) 
+                except Exception as e:
+                    print("Pointerarray printing", e)  
+
         except Exception as e: 
             print("could not run the lines of the input file, or something with output went wrong")
             print(e)
