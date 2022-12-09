@@ -195,12 +195,65 @@ def myfree(address):
     # Check if the block's neighbors are free and coalesce them 
     # Update the header and footer of the freed block (or coalesced)
     # Update the reference/pointer in the pointerarray
+
+    # First take the index of the requested free. 
+    requested_free_header_index= int(pointerarray[int(address)])
+    # Take the header of the block you are trying to free. Will be decimal value. Subtract 1 to get rid of allocation. 
+    requested_freeblock_bytesize= int(heap[requested_free_header_index], 16) -1
+    requested_freeblock_wordsize= int(requested_freeblock_bytesize/4) 
+    # Take the index of the footer of the block you are currently trying to free. 
+    requested_free_footer_index=int(requested_free_header_index+requested_freeblock_wordsize-1) 
+
+    # Check the predecessor block in heap
+    predecessor_footer_index = int(requested_free_header_index)-1 
+    predecessor_bytesize = int(heap[predecessor_footer_index], 16)
+    #Check if it is the first or
+    #Check if predecessor is freed or not already. 
+    if predecessor_bytesize % 2 == 1 or predecessor_footer_index==0: 
+        coalesce_previous=False 
+    else: 
+        coalesce_previous=True 
+    
+    successor_header_index = int(requested_free_footer_index) + 1 
+    successor_bytesize = int(heap[successor_header_index], 16)
+    #Check successor if free or not. 
+    if successor_bytesize % 2 ==1 or (successor_header_index == (len(heap)-1)): 
+        coalesce_next = False
+    else: 
+        coalesce_next = True
+    #Use this "pointer" to look for the word in the heap
+    #Case 1: predecessor block and successor block are allocated
+    # Or if previous word is start of heap. 
+    #Simply change header and footer. 
+    #Free, then coalesce lower, then higher 
+    #if coalesce_previous==False and coalesce_next==False: 
+    heap[requested_free_header_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
+    heap[requested_free_footer_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
+        #if strategy=="explicit": 
+        #   heap[requested_free_header_index+1] = 
+    #Coalesce previous, change header, then change footer. 
+    if coalesce_previous==True: 
+        predecessor_header_index = predecessor_footer_index+1-(int(predecessor_bytesize/4)) 
+        sumfreebytes=int(requested_freeblock_bytesize+predecessor_bytesize)
+        heap[predecessor_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
+        heap[requested_free_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
+        requested_free_header_index = predecessor_header_index
+        requested_freeblock_bytesize = sumfreebytes
+    if coalesce_next == True: 
+        successor_footer_index = successor_header_index-1+ (int(successor_bytesize/4))
+        sumfreebytes=int(requested_freeblock_bytesize+successor_bytesize)
+        heap[requested_free_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
+        heap[successor_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
+    pointerarray[address]=None
+    
+    
     return 
     
 def runlines(input,output): 
     # Run for each line in input text file
     for line in input: 
         try: 
+            print("----------------------")
             print(line)
             theline=line.split(",")
             # If allocation, form: bytes, variable name
@@ -212,7 +265,12 @@ def runlines(input,output):
                 printnonemptyheap()
             # If free, find the pointer, and execute the myfree function on it
             elif theline[0].strip()=="f": 
-                #myfree(int(theline[1]))
+                print("---------------")
+                print("We want to free, variable: ", theline[1])
+                myfree(int(theline[1]))
+                printnonemptyheap()
+                print("end of free")
+                print("----------------")
                 continue 
             # If realloc, set new variable in the mypointer array and do the myrealloc using the previous variable and the new alloc space. 
             elif theline[0].strip()=="r": 
