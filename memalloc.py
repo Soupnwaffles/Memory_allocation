@@ -376,6 +376,9 @@ def runlines(input,output):
             # If allocation, form: bytes, variable name
             if theline[0].strip()=="a": 
                 #set pointerarray at index (variable name) to point to the resulting index of the alloc
+                if(int(theline[1]) > 25000): 
+                    print("python3 memalloc.py: Total heap capacity reached! (100000 words)")
+                    return 0 
                 print("pointerarray index = ",theline[2])
                 pointerarray[int(theline[2])] = myalloc(int(theline[1]))
                 print("finished an alloc, heap index is ", pointerarray[int(theline[2])])
