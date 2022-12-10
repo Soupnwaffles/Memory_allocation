@@ -138,6 +138,7 @@ def myalloc(bytes):
         decimalbestfit = int(bestfit[1],16)
         while j<len(heap)-4: 
             decimal_old_blockbytes = int(heap[j], 16)
+            print("when we assign it, decimal_old_blockbytes is: ", decimal_old_blockbytes)
             decimal_old_numwords = decimal_old_blockbytes/4
             decimalbestfit = int(bestfit[1],16) 
             if decimal_old_blockbytes % 2 == 1: 
@@ -167,10 +168,16 @@ def myalloc(bytes):
         #Add the bytes allocated + 1 (to indicate allocation) and return pointer. 
         #Get the previous free block size and save it for later use. 
         prevsize=heap[j]
+        decimal_old_blockbytes = int(heap[j], 16)
         # Make the previously free header into whatever the allocated size is, plus 1 for allocation. 
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("At line 231, we are making heap[j] = total_allocated bytes+1")
         heap[j]="0x{0:0{1}X}".format(total_allocated_bytes+1,8)
+        print("New heap value at j, ", j, "is: , ", heap[j])
         #Make the new footer for the allocated block. 
         heap[int(j+(total_allocated_bytes/4)-1)] = "0x{0:0{1}X}".format(total_allocated_bytes+1,8)  #Problem here? 
+        printnonemptyheap()
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # If the new alloc takes up the entire previous free block, do nothing
         if int(prevsize, 16) == (total_allocated_bytes/4): 
             pass
@@ -179,16 +186,20 @@ def myalloc(bytes):
             try: 
                 #Set a new size for the free block
                 #newsizefree = int(prevsize,16)-total_allocated_bytes
+                print("Decimal_old_blockbytes is: ", decimal_old_blockbytes)
+                print("Total allocated bytes is: ", total_allocated_bytes)
                 newsizefree = decimal_old_blockbytes - total_allocated_bytes
-                # Go to where the new free block will be, change it to its new size. 
-                #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
-                heap[int(j+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
-                # Also change the footer of the previous free block to the new size. 
-                try: 
-                    heap[int(j + (decimal_old_numwords)-1)] = "0x{0:0{1}X}".format(newsizefree, 8) 
-                except Exception as e: 
-                    print("Something went wrong specifically when changing the footer of the prev free block for best fit.")
-                    print(e) 
+                print("newsizefree is: ", newsizefree)
+                if newsizefree != 0: 
+                    # Go to where the new free block will be, change it to its new size. 
+                    #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
+                    heap[int(j+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
+                    # Also change the footer of the previous free block to the new size. 
+                    try: 
+                        heap[int(j + (decimal_old_numwords)-1)] = "0x{0:0{1}X}".format(newsizefree, 8) 
+                    except Exception as e: 
+                        print("Something went wrong specifically when changing the footer of the prev free block for best fit.")
+                        print(e) 
             except Exception as e: 
                 print("Something went wrong when fixing new free block in best fit")
                 print(e) 
@@ -245,6 +256,10 @@ def myalloc(bytes):
                             #Set a new size for the free block
                             #newsizefree = int(prevsize,16)-total_allocated_bytes
                             newsizefree = decimal_old_blockbytes - total_allocated_bytes
+                            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+                            print("newsizefree is, ", newsizefree)
+                            print("Heap before the if for free block change, (during alloc): ")
+                            printnonemptyheap()
                             if newsizefree != 0: 
                                 # Go to where the new free block will be, change it to its new size. 
                                 #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
@@ -255,6 +270,7 @@ def myalloc(bytes):
                                 except Exception as e: 
                                     print("Something went wrong specifically when changing the footer of the prev free block.")
                                     print(e) 
+                            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
                         except Exception as e: 
                             print("Something went wrong when fixing new free block")
                             print(e) 
