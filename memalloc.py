@@ -16,7 +16,7 @@ def heapstart(argv=None):
     if arg is None or len(arg)==1 or len(arg)==2: 
     #If input is none, default values used.  
         #print("Commandline was none, defaulted to using 5.in as an input file, with implicit free list using first fit. ")
-        arg = ["memalloc.py", "resultheap.txt", "--free-list=implicit", "--fit=best", "examples/6.in"]
+        arg = ["memoryalloc.py", "resultheap.txt", "--free-list=implicit", "--fit=best", "examples/6.in"]
     if (len(arg)<5): 
         printusage()
         print(arg) 
@@ -54,7 +54,6 @@ def heapstart(argv=None):
 
     #Validate output file and open it for writing
     try: 
-        outputfile.strip("-o=")
         o = open(outputfile, "w")
     except: 
         print("Output file opening not working. ")
@@ -107,7 +106,7 @@ def heapstart(argv=None):
 
 
 def printusage(): 
-    print("Usage: python3 memalloc.py [-o <output-path>] --free-list={implicit or explicit} --fit={first or best} <input file path>   ")
+    print("Usage: python3 heap.py [-o <output-path>] --free-list={implicit or explicit} --fit={first or best} <input file>   ")
     return 
 
 def myalloc(bytes): 
