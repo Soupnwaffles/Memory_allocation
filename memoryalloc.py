@@ -15,8 +15,8 @@ def heapstart(argv=None):
     # It will default to the path of the project as argv, with a length of 1 
     if arg is None or len(arg)==1 or len(arg)==2: 
     #If input is none, default values used.  
-        print("Commandline was none, defaulted to using 5.in as an input file, with implicit free list using first fit. ")
-        arg = ["memoryalloc.py", "result", "--free-list=implicit", "--fit=first", "examples/5.in"]
+        #print("Commandline was none, defaulted to using 5.in as an input file, with implicit free list using first fit. ")
+        arg = ["memoryalloc.py", "result", "--free-list=implicit", "--fit=first", "examples/6.in"]
     if (len(arg)<5): 
         printusage()
         print(arg) 
@@ -165,10 +165,6 @@ def myalloc(bytes):
                             #Set a new size for the free block
                             #newsizefree = int(prevsize,16)-total_allocated_bytes
                             newsizefree = decimal_old_blockbytes - total_allocated_bytes
-                            print("decimal_old_blockbytes is ", decimal_old_blockbytes)
-                            print("total alloced bytes are: ",total_allocated_bytes)
-                            print("We want to allocate, ", total_allocated_words, "words")
-                            print("newsizefree is", newsizefree)
                             # Go to where the new free block will be, change it to its new size. 
                             #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
                             heap[int(i+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
@@ -195,7 +191,8 @@ def myfree(address):
     # Check if the block's neighbors are free and coalesce them 
     # Update the header and footer of the freed block (or coalesced)
     # Update the reference/pointer in the pointerarray
-
+    if pointerarray[address]==None: 
+        return 
     # First take the index of the requested free. 
     requested_free_header_index= int(pointerarray[int(address)])
     # Take the header of the block you are trying to free. Will be decimal value. Subtract 1 to get rid of allocation. 
@@ -213,6 +210,8 @@ def myfree(address):
         coalesce_previous=False 
     else: 
         coalesce_previous=True 
+        predecessor_header_index = predecessor_footer_index+1-(int(predecessor_bytesize/4)) 
+        sumfreebytes=int(requested_freeblock_bytesize+predecessor_bytesize)
     
     successor_header_index = int(requested_free_footer_index) + 1 
     successor_bytesize = int(heap[successor_header_index], 16)
@@ -221,17 +220,38 @@ def myfree(address):
         coalesce_next = False
     else: 
         coalesce_next = True
+        successor_footer_index = successor_header_index-1+ (int(successor_bytesize/4))
+        sumfreenextbytes=int(requested_freeblock_bytesize+successor_bytesize)
     #Use this "pointer" to look for the word in the heap
     #Case 1: predecessor block and successor block are allocated
     # Or if previous word is start of heap. 
     #Simply change header and footer. 
     #Free, then coalesce lower, then higher 
     #if coalesce_previous==False and coalesce_next==False: 
-    heap[requested_free_header_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
-    heap[requested_free_footer_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
+    print("requested free block byte size is: ", requested_freeblock_bytesize)
+    #heap[requested_free_header_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
+    #heap[requested_free_footer_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
         #if strategy=="explicit": 
         #   heap[requested_free_header_index+1] = 
     #Coalesce previous, change header, then change footer. 
+    if coalesce_previous==False and coalesce_next==False: 
+        heap[requested_free_header_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
+        heap[requested_free_footer_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
+        return 
+    elif coalesce_next==False and coalesce_previous==True: 
+        heap[predecessor_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
+        heap[requested_free_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
+        return 
+    elif coalesce_next==True and coalesce_previous==False: 
+        heap[requested_free_header_index] ="0x{0:0{1}X}".format(sumfreenextbytes, 8)
+        heap[successor_footer_index]="0x{0:0{1}X}".format(sumfreenextbytes, 8)
+        return 
+    elif coalesce_next==True and coalesce_previous==True: 
+        heap[predecessor_header_index] = "0x{0:0{1}X}".format(requested_freeblock_bytesize + predecessor_bytesize + successor_bytesize, 8) 
+        heap[successor_footer_index] = "0x{0:0{1}X}".format(requested_freeblock_bytesize + predecessor_bytesize + successor_bytesize, 8) 
+        return 
+
+        
     if coalesce_previous==True: 
         predecessor_header_index = predecessor_footer_index+1-(int(predecessor_bytesize/4)) 
         sumfreebytes=int(requested_freeblock_bytesize+predecessor_bytesize)
@@ -303,10 +323,6 @@ if __name__== "__main__":
         print(strategy)
         try: 
             runlines(f,o)
-            # for i in range(0,len(heap)): 
-            #     #if heap[i] != "0x00000000" or heap[i] != "": 
-            #     if heap[i] != "" and heap[i]!= None: 
-            #         print(i, heap[i])
             printnonemptyheap()
             for j in range(0,len(pointerarray)): 
                 try: 
