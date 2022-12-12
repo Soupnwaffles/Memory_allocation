@@ -114,13 +114,18 @@ def myalloc(bytes):
     #Address must be divisible by 8
     # IF allocating 5 bytes, take 5 + (8-(5%8))
     # IF allocatin 13 bytes, take 13 + (8-(13%8)) = 16 , then +8 for head/foot
+    if len(heap)-2 < bytes/4: 
+        mysbrk()
     print("@@@@@@@@@")
     print("pre, allocated heap is: ")
     printnonemptyheap()
     print("@@@@@@@@@")
     paddedbytes= 8-(bytes%8)
     payloadbytes= bytes + paddedbytes
-    total_allocated_bytes=  8 + payloadbytes
+    if paddedbytes != 8: 
+        total_allocated_bytes=  8 + payloadbytes
+    else: 
+        total_allocated_bytes= payloadbytes
     print("at beginning, total alloced bytes is: ", total_allocated_bytes)
     total_allocated_words = int(total_allocated_bytes/4)
     address= "0x{0:0{1}X}".format(total_allocated_bytes,8)
@@ -189,18 +194,28 @@ def myalloc(bytes):
                 #newsizefree = int(prevsize,16)-total_allocated_bytes
                 print("Decimal_old_blockbytes is: ", decimal_old_blockbytes)
                 print("Total allocated bytes is: ", total_allocated_bytes)
+                print("total allocated words is: ", total_allocated_words)
+                print("j is: ", j)
                 newsizefree = decimal_old_blockbytes - total_allocated_bytes
                 print("newsizefree is: ", newsizefree)
-                if newsizefree != 0: 
+                #If the free block remaining will be greater than or equal to 16
+                if newsizefree != 0 and newsizefree >= 16: 
                     # Go to where the new free block will be, change it to its new size. 
                     #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
                     heap[int(j+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
                     # Also change the footer of the previous free block to the new size. 
                     try: 
-                        heap[int(j + (decimal_old_numwords)-1)] = "0x{0:0{1}X}".format(newsizefree, 8) 
+                        newfreewords = int(newsizefree/4)
+                        heap[int(j + (total_allocated_words)+(newfreewords-1))] = "0x{0:0{1}X}".format(newsizefree, 8) 
                     except Exception as e: 
                         print("Something went wrong specifically when changing the footer of the prev free block for best fit.")
                         print(e) 
+                else: # If remaining free space is less than 16, fill whole chunk.
+                    heap[j] = "0x{0:0{1}X}".format(decimal_old_blockbytes+1,8)
+                    heap[int(j+(decimal_old_blockbytes/4)-1)] = "0x{0:0{1}X}".format(decimal_old_blockbytes+1,8) 
+                    #clear data in that chunk. 
+                    for num in range(j+1,int(j+(decimal_old_blockbytes/4)-1)): 
+                        heap[num] = ""
             except Exception as e: 
                 print("Something went wrong when fixing new free block in best fit")
                 print(e) 
@@ -261,7 +276,7 @@ def myalloc(bytes):
                             print("newsizefree is, ", newsizefree)
                             print("Heap before the if for free block change, (during alloc): ")
                             printnonemptyheap()
-                            if newsizefree != 0: 
+                            if newsizefree != 0 and newsizefree >= 16: 
                                 # Go to where the new free block will be, change it to its new size. 
                                 #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
                                 heap[int(i+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
@@ -271,6 +286,12 @@ def myalloc(bytes):
                                 except Exception as e: 
                                     print("Something went wrong specifically when changing the footer of the prev free block.")
                                     print(e) 
+                            else: # If remaining free space is less than 16, fill whole chunk.
+                                heap[i] = "0x{0:0{1}X}".format(decimal_old_blockbytes+1,8)
+                                heap[int(i+(decimal_old_blockbytes/4)-1)] = "0x{0:0{1}X}".format(decimal_old_blockbytes+1,8) 
+                                #clear data in that chunk. 
+                                for num in range(i+1,int(i+(decimal_old_blockbytes/4)-1)): 
+                                    heap[num] = ""
                             print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
                         except Exception as e: 
                             print("Something went wrong when fixing new free block")
@@ -414,14 +435,30 @@ def runlines(input,output):
     return 
 
 def myrealloc(prevpointer, bytes): 
+    global realloc 
+    realloc = True
     if int(bytes)==0: 
         myfree(prevpointer)
         return None
     try: 
         #copyfooter=heap[pointerarray[prevpointer]]
         z = myalloc(bytes)
+        
+        print("Here we go into realloc function, copying data into heap")
+        previndex = int(pointerarray[prevpointer]) 
+        dec_old_heapbytes = int(heap[previndex],16) -1
+        dec_old_numwords = int(dec_old_heapbytes/4) 
+        print("prev index is: ", previndex, ", And dec_old_words is, ",dec_old_numwords)
+        temparray=[""]*(dec_old_numwords-2)
+        for w in range(0,dec_old_numwords-2): 
+            temparray[w] = heap[(previndex)+1+w]
+        for w in range(0,len(temparray)): 
+            print("z + 1 + w is: ",z+1+w)
+            heap[(z)+1+w] = temparray[w]
+
         myfree(prevpointer)
         pointerarray[prevpointer]= None
+        realloc  = False
         return z
     except Exception as e: 
         print("Something went wrong in realloc: ")
@@ -430,15 +467,20 @@ def myrealloc(prevpointer, bytes):
     return z
 
 def mysbrk(): 
-    try: 
-        heap.append([0]*9000)
-        heap[9999] = "0x00000001"
-        heap[999] = "" 
-        pointerarray[100] = 999
+    try:
+        prevlen = len(heap)
+        for i in range(0,302): 
+            heap.append("")
+        heap[len(heap)-1] = "0x00000001"
+        heap[prevlen-1] = "" 
+        pointerarray[100] = prevlen-1
         remainingwords=len(heap)-1000
         heap[999]= "0x{0:0{1}X}".format(int((remainingwords+1)*4), 8)
         heap[9998] = "0x{0:0{1}X}".format(int((remainingwords+1)*4), 8)
         myfree(100)
+        print("After calling sbrk, ")
+        printnonemptyheap()
+        print("returning from sbrk---------------")
         return 
     except Exception as e: 
         print("Something went wrong in mysbrk")
