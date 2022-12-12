@@ -138,7 +138,8 @@ def myalloc(bytes):
         decimalbestfit = int(bestfit[1],16)
         while j<len(heap)-4: 
             decimal_old_blockbytes = int(heap[j], 16)
-            print("when we assign it, decimal_old_blockbytes is: ", decimal_old_blockbytes)
+            print("when we assign it, j is ",j," decimal_old_blockbytes is: ", decimal_old_blockbytes)
+            print("and heap is: ", heap[j])
             decimal_old_numwords = decimal_old_blockbytes/4
             decimalbestfit = int(bestfit[1],16) 
             if decimal_old_blockbytes % 2 == 1: 
@@ -301,6 +302,12 @@ def myfree(address):
     # Check the predecessor block in heap
     predecessor_footer_index = int(requested_free_header_index)-1 
     predecessor_bytesize = int(heap[predecessor_footer_index], 16)
+    predecessor_header_index = 0 
+    if int(heap[predecessor_footer_index],16) % 2 == 1 and predecessor_footer_index != 0: 
+        predecessor_header_index = predecessor_footer_index - (((predecessor_bytesize-1)/4) -1 )
+    elif predecessor_footer_index != 0: 
+        predecessor_header_index = predecessor_footer_index - (predecessor_bytesize/4) -1
+    
     #Check if it is the first or
     #Check if predecessor is freed or not already. 
     if predecessor_bytesize % 2 == 1 or predecessor_footer_index==0: 
@@ -423,7 +430,20 @@ def myrealloc(prevpointer, bytes):
     return z
 
 def mysbrk(): 
-    heap.append([0]*9000)
+    try: 
+        heap.append([0]*9000)
+        heap[9999] = "0x00000001"
+        heap[999] = "" 
+        pointerarray[100] = 999
+        remainingwords=len(heap)-1000
+        heap[999]= "0x{0:0{1}X}".format(int((remainingwords+1)*4), 8)
+        heap[9998] = "0x{0:0{1}X}".format(int((remainingwords+1)*4), 8)
+        myfree(100)
+        return 
+    except Exception as e: 
+        print("Something went wrong in mysbrk")
+        print(e) 
+        return 
 def printevenemptyheap(o): 
     for i in range(0,len(heap)): 
         text = "{0}, {1} \n".format(i,heap[i])
