@@ -116,17 +116,14 @@ def myalloc(bytes):
     # IF allocatin 13 bytes, take 13 + (8-(13%8)) = 16 , then +8 for head/foot
     if len(heap)-2 < bytes/4: 
         mysbrk()
-    print("@@@@@@@@@")
-    print("pre, allocated heap is: ")
-    printnonemptyheap()
-    print("@@@@@@@@@")
+   
     paddedbytes= 8-(bytes%8)
     payloadbytes= bytes + paddedbytes
     if paddedbytes != 8: 
         total_allocated_bytes=  8 + payloadbytes
     else: 
         total_allocated_bytes= payloadbytes
-    print("at beginning, total alloced bytes is: ", total_allocated_bytes)
+    # print("at beginning, total alloced bytes is: ", total_allocated_bytes)
     total_allocated_words = int(total_allocated_bytes/4)
     address= "0x{0:0{1}X}".format(total_allocated_bytes,8)
     #First address/word is a placeholder. 
@@ -143,8 +140,8 @@ def myalloc(bytes):
         decimalbestfit = int(bestfit[1],16)
         while j<len(heap)-4: 
             decimal_old_blockbytes = int(heap[j], 16)
-            print("when we assign it, j is ",j," decimal_old_blockbytes is: ", decimal_old_blockbytes)
-            print("and heap is: ", heap[j])
+            # print("when we assign it, j is ",j," decimal_old_blockbytes is: ", decimal_old_blockbytes)
+            # print("and heap is: ", heap[j])
             decimal_old_numwords = decimal_old_blockbytes/4
             decimalbestfit = int(bestfit[1],16) 
             if decimal_old_blockbytes % 2 == 1: 
@@ -176,14 +173,14 @@ def myalloc(bytes):
         prevsize=heap[j]
         decimal_old_blockbytes = int(heap[j], 16)
         # Make the previously free header into whatever the allocated size is, plus 1 for allocation. 
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("At line 231, we are making heap[j] = total_allocated bytes+1")
+        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # print("At line 231, we are making heap[j] = total_allocated bytes+1")
         heap[j]="0x{0:0{1}X}".format(total_allocated_bytes+1,8)
-        print("New heap value at j, ", j, "is: , ", heap[j])
+        #print("New heap value at j, ", j, "is: , ", heap[j])
         #Make the new footer for the allocated block. 
         heap[int(j+(total_allocated_bytes/4)-1)] = "0x{0:0{1}X}".format(total_allocated_bytes+1,8)  #Problem here? 
-        printnonemptyheap()
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        #printnonemptyheap()
+        #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # If the new alloc takes up the entire previous free block, do nothing
         if int(prevsize, 16) == (total_allocated_bytes/4): 
             pass
@@ -192,12 +189,12 @@ def myalloc(bytes):
             try: 
                 #Set a new size for the free block
                 #newsizefree = int(prevsize,16)-total_allocated_bytes
-                print("Decimal_old_blockbytes is: ", decimal_old_blockbytes)
-                print("Total allocated bytes is: ", total_allocated_bytes)
-                print("total allocated words is: ", total_allocated_words)
-                print("j is: ", j)
+                # print("Decimal_old_blockbytes is: ", decimal_old_blockbytes)
+                # print("Total allocated bytes is: ", total_allocated_bytes)
+                # print("total allocated words is: ", total_allocated_words)
+                # print("j is: ", j)
                 newsizefree = decimal_old_blockbytes - total_allocated_bytes
-                print("newsizefree is: ", newsizefree)
+                #print("newsizefree is: ", newsizefree)
                 #If the free block remaining will be greater than or equal to 16
                 if newsizefree != 0 and newsizefree >= 16: 
                     # Go to where the new free block will be, change it to its new size. 
@@ -222,7 +219,7 @@ def myalloc(bytes):
         return j
             
     #########################################################
-    #########################################################
+    # For implicit, firstfit. 
     if fit == "first" and strategy =="implicit":
         while (found == False):  
             # Decimal value of the bytes of the previous free block. 
@@ -255,14 +252,12 @@ def myalloc(bytes):
                     #Get the previous free block size and save it for later use. 
                     prevsize=heap[i]
                     # Make the previously free header into whatever the allocated size is, plus 1 for allocation. 
-                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    print("At line 231, we are making heap[i] = total_allocated bytes+1")
+                    
                     heap[i]="0x{0:0{1}X}".format(total_allocated_bytes+1,8)
-                    print("New heap value at i,", i, "is: ,", heap[i])
+
                     #Make the new footer for the allocated block. 
                     heap[int(i+(total_allocated_bytes/4)-1)] = "0x{0:0{1}X}".format(total_allocated_bytes+1,8)  #Problem here? 
-                    printnonemptyheap()
-                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                   
                     # If the new alloc takes up the entire previous free block, do nothing
                     if int(prevsize, 16) == (total_allocated_bytes/4): 
                         continue 
@@ -272,10 +267,8 @@ def myalloc(bytes):
                             #Set a new size for the free block
                             #newsizefree = int(prevsize,16)-total_allocated_bytes
                             newsizefree = decimal_old_blockbytes - total_allocated_bytes
-                            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-                            print("newsizefree is, ", newsizefree)
-                            print("Heap before the if for free block change, (during alloc): ")
-                            printnonemptyheap()
+                            
+                           
                             if newsizefree != 0 and newsizefree >= 16: 
                                 # Go to where the new free block will be, change it to its new size. 
                                 #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
@@ -292,7 +285,7 @@ def myalloc(bytes):
                                 #clear data in that chunk. 
                                 for num in range(i+1,int(i+(decimal_old_blockbytes/4)-1)): 
                                     heap[num] = ""
-                            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+                           
                         except Exception as e: 
                             print("Something went wrong when fixing new free block")
                             print(e) 
@@ -376,19 +369,6 @@ def myfree(address):
         heap[successor_footer_index] = "0x{0:0{1}X}".format(requested_freeblock_bytesize + predecessor_bytesize + successor_bytesize, 8) 
         return 
 
-        
-    # if coalesce_previous==True: 
-    #     predecessor_header_index = predecessor_footer_index+1-(int(predecessor_bytesize/4)) 
-    #     sumfreebytes=int(requested_freeblock_bytesize+predecessor_bytesize)
-    #     heap[predecessor_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
-    #     heap[requested_free_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
-    #     requested_free_header_index = predecessor_header_index
-    #     requested_freeblock_bytesize = sumfreebytes
-    # if coalesce_next == True: 
-    #     successor_footer_index = successor_header_index-1+ (int(successor_bytesize/4))
-    #     sumfreebytes=int(requested_freeblock_bytesize+successor_bytesize)
-    #     heap[requested_free_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
-    #     heap[successor_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
     pointerarray[address]=None
     
     
@@ -398,8 +378,8 @@ def runlines(input,output):
     # Run for each line in input text file
     for line in input: 
         try: 
-            print("----------------------")
-            print(line)
+            # print("----------------------")
+            # print(line)
             theline=line.split(",")
             # If allocation, form: bytes, variable name
             if theline[0].strip()=="a": 
@@ -407,25 +387,24 @@ def runlines(input,output):
                 if(int(theline[1]) > 25000): 
                     print("python3 memalloc.py: Total heap capacity reached! (100000 words)")
                     return 0 
-                print("pointerarray index = ",theline[2])
+               
                 pointerarray[int(theline[2])] = myalloc(int(theline[1]))
-                print("finished an alloc, heap index is ", pointerarray[int(theline[2])])
-                printnonemptyheap()
+                
             # If free, find the pointer, and execute the myfree function on it
             elif theline[0].strip()=="f": 
-                print("---------------")
-                print("We want to free, variable: ", theline[1])
+                # print("---------------")
+                # print("We want to free, variable: ", theline[1])
                 myfree(int(theline[1]))
                 pointerarray[int(theline[1])]= None
-                printnonemptyheap()
-                print("end of free")
-                print("----------------")
+                # printnonemptyheap()
+                # print("end of free")
+                # print("----------------")
                 continue 
             # If realloc, set new variable in the mypointer array and do the myrealloc using the previous variable and the new alloc space. 
             elif theline[0].strip()=="r": 
                 pointerarray[int(theline[3])]= myrealloc(pointerarray[int(theline[2])], int(theline[1]))
-                print("After realloc, heap is: ")
-                printnonemptyheap()
+                # print("After realloc, heap is: ")
+                # printnonemptyheap()
                 continue 
         except Exception as e: 
             print("Something went wrong in runlines. ")
@@ -444,16 +423,16 @@ def myrealloc(prevpointer, bytes):
         #copyfooter=heap[pointerarray[prevpointer]]
         z = myalloc(bytes)
         
-        print("Here we go into realloc function, copying data into heap")
+        # print("Here we go into realloc function, copying data into heap")
         previndex = int(pointerarray[prevpointer]) 
         dec_old_heapbytes = int(heap[previndex],16) -1
         dec_old_numwords = int(dec_old_heapbytes/4) 
-        print("prev index is: ", previndex, ", And dec_old_words is, ",dec_old_numwords)
+        # print("prev index is: ", previndex, ", And dec_old_words is, ",dec_old_numwords)
         temparray=[""]*(dec_old_numwords-2)
         for w in range(0,dec_old_numwords-2): 
             temparray[w] = heap[(previndex)+1+w]
         for w in range(0,len(temparray)): 
-            print("z + 1 + w is: ",z+1+w)
+             # print("z + 1 + w is: ",z+1+w)
             heap[(z)+1+w] = temparray[w]
 
         myfree(prevpointer)
@@ -478,9 +457,9 @@ def mysbrk():
         heap[999]= "0x{0:0{1}X}".format(int((remainingwords+1)*4), 8)
         heap[9998] = "0x{0:0{1}X}".format(int((remainingwords+1)*4), 8)
         myfree(100)
-        print("After calling sbrk, ")
-        printnonemptyheap()
-        print("returning from sbrk---------------")
+        # print("After calling sbrk, ")
+        # printnonemptyheap()
+        # print("returning from sbrk---------------")
         return 
     except Exception as e: 
         print("Something went wrong in mysbrk")
