@@ -7,6 +7,8 @@ heap = []
 strategy = ""
 fit = "" 
 pointerarray = []
+explicitfreeblocks = []
+
 def heapstart(argv=None): 
     # Takes argv given by user.
     #print(argv)
@@ -220,7 +222,8 @@ def myalloc(bytes):
             
     #########################################################
     # For implicit, firstfit. 
-    if fit == "first" and strategy =="implicit":
+    #if fit == "first" and strategy =="implicit":
+    if fit == "first": 
         while (found == False):  
             # Decimal value of the bytes of the previous free block. 
             decimal_old_blockbytes = int(heap[i], 16)
@@ -257,7 +260,10 @@ def myalloc(bytes):
 
                     #Make the new footer for the allocated block. 
                     heap[int(i+(total_allocated_bytes/4)-1)] = "0x{0:0{1}X}".format(total_allocated_bytes+1,8)  #Problem here? 
-                   
+                    if strategy == "explicit": 
+                        for l in range(i+1, i+3): 
+                            if heap[l] !=  "" and heap[l] != None: 
+                                heap[l] = "0x00000000"
                     # If the new alloc takes up the entire previous free block, do nothing
                     if int(prevsize, 16) == (total_allocated_bytes/4): 
                         continue 
@@ -406,6 +412,8 @@ def runlines(input,output):
                 # print("After realloc, heap is: ")
                 # printnonemptyheap()
                 continue 
+            if strategy == "explicit": 
+                fillexpheap()
         except Exception as e: 
             print("Something went wrong in runlines. ")
             print(e) 
@@ -476,7 +484,54 @@ def printnonemptyheap():
             if heap[i] != None and heap[i] != "": 
                 print(i,",",heap[i])
         return 
+class expfreeblock(): 
+    def __init__(self, sizebytes =None, np=None,pp=None,hi=None,fi=None):
+        self.sizebytes = sizebytes
+        self.next = np
+        self.prev = pp 
+        self.headerindex = hi
+        self.footerindex = fi
 
+
+def fillexpheap(): 
+    i = 1  
+    while (i<len(heap)-2): 
+        
+        try: 
+            chunk_bytes=int(heap[i],16) 
+            print("hey, chunkbytes is: ", chunk_bytes) 
+            print("heap[",i,"] is :",heap[i])
+            if chunk_bytes % 2 == 0: 
+                explicitfreeblocks.append(expfreeblock(chunk_bytes, None, None, i, int(i-1+(chunk_bytes/4)) ))
+                i += int((chunk_bytes/4))
+            else: 
+                i += int((chunk_bytes-1)/4)
+        except Exception as e: 
+            print("problem in the initial part of filling explicit linked list. ")
+            print(e) 
+            return 
+    try: 
+        for i in range(0,len(explicitfreeblocks)): 
+            if i == 0 and len(explicitfreeblocks)<2: 
+                explicitfreeblocks[i].prev="0x00000000"
+                explicitfreeblocks[i].next="0x00000000"
+            elif i==0: 
+                explicitfreeblocks[i].prev="0x00000000"
+                explicitfreeblocks[i].next="0x{0:0{1}X}".format(explicitfreeblocks[i+1].headerindex, 8)
+            elif i == len(explicitfreeblocks)-1:
+                explicitfreeblocks[i].prev="0x{0:0{1}X}".format(explicitfreeblocks[i-1].headerindex, 8)
+                explicitfreeblocks[i].next="0x00000000" 
+            else: 
+                explicitfreeblocks[i].prev="0x{0:0{1}X}".format(explicitfreeblocks[i-1].headerindex, 8)
+                explicitfreeblocks[i].next="0x{0:0{1}X}".format(explicitfreeblocks[i+1].headerindex, 8)
+        for i in range(0,len(explicitfreeblocks)): 
+            heap[explicitfreeblocks[i].headerindex + 1] = explicitfreeblocks[i].prev
+            heap[explicitfreeblocks[i].headerindex + 2] = explicitfreeblocks[i].next
+    except Exception as e: 
+        print("Problem in actual filling out the pointers in the heap for explicit")
+        print(e) 
+        return 
+    return 
 if __name__== "__main__": 
     heapstart(sys.argv)
     try: 
@@ -485,6 +540,8 @@ if __name__== "__main__":
         #print(strategy)
         try: 
             runlines(f,o)
+            if strategy =="explicit": 
+                fillexpheap()
             printevenemptyheap(o)
             f.close()
             o.close()
