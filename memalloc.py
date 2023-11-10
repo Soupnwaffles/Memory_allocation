@@ -88,15 +88,14 @@ def heapstart(argv=None):
     if strategy == "explicit": 
         heap[2]="0x00000000"
         heap[3]="0x00000000"
-    #if strategy == "implicit": 
+    
     totalwords = len(heap)
     initial_free_words= totalwords-2
-    #initial_free_bytes=(totalwords/2)-1
+    
     initial_free_bytes = initial_free_words * 4
     heap[1] ="0x{0:0{1}X}".format(int(initial_free_bytes),8)
     heap[len(heap)-2] = "0x{0:0{1}X}".format(int(initial_free_bytes),8)
-    #print("last item in heap: ", heap[len(heap)-1])
-    # Above should be good unless change in variables is wanted. 
+    
     #Pointers to heap
     pointerarray = [None]*100
 
@@ -185,14 +184,13 @@ def myalloc(bytes):
         else:
             try: 
                 #Set a new size for the free block
-                #newsizefree = int(prevsize,16)-total_allocated_bytes
+    
                 print("Decimal_old_blockbytes is: ", decimal_old_blockbytes)
                 print("Total allocated bytes is: ", total_allocated_bytes)
                 newsizefree = decimal_old_blockbytes - total_allocated_bytes
                 print("newsizefree is: ", newsizefree)
                 if newsizefree != 0: 
                     # Go to where the new free block will be, change it to its new size. 
-                    #heap[int(i+(total_allocated_bytes/4))] = "0x{0:0{1}X}".format(newsizefree, 8)
                     heap[int(j+(total_allocated_words))] = "0x{0:0{1}X}".format(newsizefree, 8)
                     # Also change the footer of the previous free block to the new size. 
                     try: 
@@ -325,11 +323,6 @@ def myfree(address):
     #Simply change header and footer. 
     #Free, then coalesce lower, then higher 
     #if coalesce_previous==False and coalesce_next==False: 
-    #print("requested free block byte size is: ", requested_freeblock_bytesize)
-    #heap[requested_free_header_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
-    #heap[requested_free_footer_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
-        #if strategy=="explicit": 
-        #   heap[requested_free_header_index+1] = 
     #Coalesce previous, change header, then change footer. 
     if coalesce_previous==False and coalesce_next==False: 
         heap[requested_free_header_index]="0x{0:0{1}X}".format(requested_freeblock_bytesize, 8)
@@ -348,19 +341,6 @@ def myfree(address):
         heap[successor_footer_index] = "0x{0:0{1}X}".format(requested_freeblock_bytesize + predecessor_bytesize + successor_bytesize, 8) 
         return 
 
-        
-    # if coalesce_previous==True: 
-    #     predecessor_header_index = predecessor_footer_index+1-(int(predecessor_bytesize/4)) 
-    #     sumfreebytes=int(requested_freeblock_bytesize+predecessor_bytesize)
-    #     heap[predecessor_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
-    #     heap[requested_free_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
-    #     requested_free_header_index = predecessor_header_index
-    #     requested_freeblock_bytesize = sumfreebytes
-    # if coalesce_next == True: 
-    #     successor_footer_index = successor_header_index-1+ (int(successor_bytesize/4))
-    #     sumfreebytes=int(requested_freeblock_bytesize+successor_bytesize)
-    #     heap[requested_free_header_index] ="0x{0:0{1}X}".format(sumfreebytes, 8)
-    #     heap[successor_footer_index]="0x{0:0{1}X}".format(sumfreebytes, 8)
     pointerarray[address]=None
     
     
@@ -411,7 +391,6 @@ def myrealloc(prevpointer, bytes):
         myfree(prevpointer)
         return None
     try: 
-        #copyfooter=heap[pointerarray[prevpointer]]
         z = myalloc(bytes)
         myfree(prevpointer)
         pointerarray[prevpointer]= None
