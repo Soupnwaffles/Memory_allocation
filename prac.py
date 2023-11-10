@@ -22,7 +22,6 @@ def main():
     print(myhex)
     print(myother)
     print(address)
-    # Need to figure out how to fill the 0's after the "0x" for hex
     print(c)
     print(h)
     return
